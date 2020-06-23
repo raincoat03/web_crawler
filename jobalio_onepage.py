@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import lxml
 import re
+from itertools import groupby
 
 page_list = []
 one_list= []
@@ -17,11 +18,6 @@ for i in liststring:
     a = re.sub(pattern, '', a)
     page_list.append(a)
 
+page_list = [list(g) for k,g in groupby(page_list, lambda x:x =='') if not k]
 for i in page_list:
-    if i != '':
-        j = i
-        one_list.append(i)
-    elif i == '':
-        print(one_list)
-        print()
-        one_list = []
+    print(i)
