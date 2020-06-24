@@ -1,35 +1,122 @@
+'''
+1. 한 페이지 내에서 회사 각각, 직무 각각 수집해서 리스트로 결합
+    → 이렇게 하면 각 직무가 개별로 추출되어 어느 회사의 직무인지 모름
+    → 블록으로 구분된 회사 하나에서 모든 데이터를 추출해 각각 리스트화 시켜야할듯
+'''
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from itertools import groupby
 import requests
 import re
+import time
+import lxml
+start = time.time()
+
+# 총 채용공고 숫자 검색(bs4)
+url = "https://www.rocketpunch.com/jobs?page=1"
+req = requests.get(url)
+bs = BeautifulSoup(req.content, "lxml")
+job_count = str(bs.find_all(attrs={"class": "active item"}))
+total_count = re.findall("\(([^)]+)", job_count)[0]
+total_count = int(total_count.replace(",", ""))
+
+# selenium으로 첫번째 페이지 가져오기
+chromedriver = "C:\\Users\\june\\Desktop\\chromedriver.exe"
+options = webdriver.ChromeOptions()
+options.add_argument('headless')
+options.add_argument('disable-gpu')
+options.add_argument('lang=ko_KR')
+driver = webdriver.Chrome(chromedriver, options = options)
+driver.get(url)
+time.sleep(3)
+html = driver.page_source
+page = BeautifulSoup(html, 'lxml')
 
 
-def rocketpunchjob():
-    url = "https://www.rocketpunch.com/jobs"
-    req = requests.get(url)
-    bs = BeautifulSoup(req.content, "html.parser")
-    job_count = str(bs.find_all(attrs={"class": "active item"}))
-    total_count = re.findall("\(([^)]+)", job_count)[0]
-    total_count = int(total_count.replace(",", ""))
-    all_list_number, n = 0, 0
-    all_list = []
+# 한 페이지 내의 회사 개수 파악
+companylist = page.find(class_= "ui job items segment", id = "company-list")
+company_title = companylist.findAll(class_="header name")
+content_total = []
+n = 0
 
-    while True:
-        if total_count > all_list_number:
-            title_list, link_list = [], []
-            n += 1
-            url_pages = "https://www.rocketpunch.com/jobs?page=" + str(n)
-            r = requests.get(url_pages)
-            bs = BeautifulSoup(r.content, "html.parser")
-            names = bs.select(".company item active")
-            for j in names:
-                link = "https://www.rocketpunch.com/" + j.get('href')
-                job_title = j.text
-                title_list.append(job_title)
-                link_list.append(link)
+while True:
+    n += 1
+    url = "https://www.rocketpunch.com/jobs?page=" + str(n)
+    driver.get(url)
+    time.sleep(3)
+    html = driver.page_source
+    page = BeautifulSoup(html, 'lxml')
+    companylist = page.find(class_="ui job items segment", id="company-list")
+    company_title = companylist.findAll(class_="header name")
 
-            for k in range(len(title_list)):
-                all_list.append(title_list[k] + " " + link_list[k])
-            all_list_number = len(all_list)
+    if len(company_title) != 0:
+        # content active 블록에서 필요한 정보 추출
+        '''
+        content_active = []
+        ## 회사명/링크 추출 및 리스트에 추가
+        block_active = companylist.find(class_= "content active")
+        block_active_name = block_active.findAll(class_= "header name")
+        block_active_link = block_active.find("a", href = True)
+        block_active_link = block_active_link["href"]
+        company_link = "https://www.rocketpunch.com" + block_active_link
+        
+        for name in block_active_name:
+            name = str(name.text.strip())
+            pattern = re.compile(r'\s+')
+            name = re.sub(pattern, '', name)
+            namewithlink = name + " " + ":" + " " + company_link
+            content_active.append(namewithlink)
+        
+        ## 직무명/링크 추출 및 리스트에 추가
+        block_active_job = block_active.findAll(class_= "nowrap job-title primary link")
+        for i in block_active_job:
+            job_title = i.text
+            job_link = "https://www.rocketpunch.com" + i.get("href")
+            job_total = job_title + " " + ":" + " " + job_link
+            content_active.append(job_total)
+        content_total.append(content_active)
+        '''
 
-        else:
-         return all_list
+        # content 태그 회사 추출
+        block = companylist.findAll(class_= "content")
+
+        ## 회사명/링크 추출 및 리스트에 추가
+        for i in range(len(company_title)+1):
+            temp, temp2 = [], []
+            content = []
+            block_name = block[i].findAll(class_="header name")
+            block_link = block[i].find("a", href=True)
+            block_link = block_link["href"]
+            if block_link != "/signup":
+                company_link = ("https://www.rocketpunch.com" + block_link).strip()
+            for name in block_name:
+                name = str(name.text.strip())
+                pattern = re.compile(r'\s+')
+                name = re.sub(pattern, '', name)
+                namewithlink = (name + " " + ":" + " " + company_link).strip()
+                content.append(namewithlink)
+
+        ## 직무명/링크 추출 & 리스트에 추가
+            block_job = block[i].findAll(class_="nowrap job-title primary link")
+            for i in block_job:
+                job_title = i.text
+                job_link = "https://www.rocketpunch.com" + i.get("href")
+                job_total = (job_title + " " + ":" + " " + job_link).strip()
+                content.append(job_total)
+                temp.append(content)
+                temp2 = list(filter(None, temp))
+
+            for i in temp2:
+                content_total.append(i)
+        print(n)
+    else:
+        break
+
+if len(content_total) == total_count:
+    for i in content_total:
+        print(i)
+    print("Correct")
+    print(time.time()-start)
+else:
+    print("Incorrect")
+    print(time.time()-start)
