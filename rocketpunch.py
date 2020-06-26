@@ -95,7 +95,6 @@ while True:
                 name = re.sub(pattern, '', name)
                 namewithlink = (name + "(" + company_link + ")").strip()
                 content.append(namewithlink)
-                content_count += 1
 
         ## 직무명/링크 추출 & 리스트에 추가
             block_job = block[i].findAll(class_="nowrap job-title primary link")
@@ -103,6 +102,7 @@ while True:
                 job_title = i.text
                 job_link = "https://www.rocketpunch.com" + i.get("href")
                 job_total = (job_title + "(" + job_link + ")").strip()
+                content_count += 1
                 content.append(job_total)
             content_total.append(content)
 
