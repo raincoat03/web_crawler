@@ -10,7 +10,10 @@ import requests
 import re
 import time
 import lxml
+import pandas as pd
+import numpy as np
 start = time.time()
+
 
 # 총 채용공고 숫자 검색(bs4)
 url = "https://www.rocketpunch.com/jobs?page=1"
@@ -31,7 +34,6 @@ driver.get(url)
 time.sleep(3)
 html = driver.page_source
 page = BeautifulSoup(html, 'lxml')
-
 
 # 한 페이지 내의 회사 개수 파악
 companylist = page.find(class_= "ui job items segment", id = "company-list")
@@ -81,19 +83,19 @@ while True:
         block = companylist.findAll(class_= "content")
 
         ## 회사명/링크 추출 및 리스트에 추가
-        for i in range(len(company_title)+1):
+        for i in range(len(company_title)):
             temp, temp2 = [], []
             content = []
             block_name = block[i].findAll(class_="header name")
             block_link = block[i].find("a", href=True)
-            block_link = block_link["href"]
             if block_link != "/signup":
-                company_link = ("https://www.rocketpunch.com" + block_link).strip()
+                block_link = block_link["href"]
+            company_link = ("https://www.rocketpunch.com" + block_link).strip()
             for name in block_name:
                 name = str(name.text.strip())
                 pattern = re.compile(r'\s+')
                 name = re.sub(pattern, '', name)
-                namewithlink = (name + " " + ":" + " " + company_link).strip()
+                namewithlink = (name + "(" + company_link + ")").strip()
                 content.append(namewithlink)
 
         ## 직무명/링크 추출 & 리스트에 추가
@@ -101,22 +103,27 @@ while True:
             for i in block_job:
                 job_title = i.text
                 job_link = "https://www.rocketpunch.com" + i.get("href")
-                job_total = (job_title + " " + ":" + " " + job_link).strip()
+                job_total = (job_title + "(" + job_link + ")").strip()
                 content.append(job_total)
-                temp.append(content)
-                temp2 = list(filter(None, temp))
+            content_total.append(content)
 
-            for i in temp2:
-                content_total.append(i)
+        ## 크롤링 완료된 페이지 확인
         print(n)
+
+        ## 크롤링 내용 .csv파일로 저장장
+        data = pd.DataFrame(content_total)
+        data.to_csv("rocketpunch.csv", encoding = "utf-8-sig")
+
     else:
         break
 
 if len(content_total) == total_count:
-    for i in content_total:
-        print(i)
+    print(len(content_total))
+    print(total_count)
     print("Correct")
     print(time.time()-start)
 else:
+    print(len(content_total))
+    print(total_count)
     print("Incorrect")
     print(time.time()-start)
