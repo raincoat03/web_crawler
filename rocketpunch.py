@@ -39,6 +39,11 @@ content_total = []
 n = 0
 content_count = 0
 
+# 광고 회사 count 위한 수집
+adcompanylist = page.find(class_="ui job-ad items segment", id="job-ad-list")
+block_ad_job = adcompanylist.findAll(class_="nowrap job-title primary link")
+block_ad_job_count = len(block_ad_job)
+
 while True:
     n += 1
     url = "https://www.rocketpunch.com/jobs?page=" + str(n)
@@ -50,8 +55,9 @@ while True:
     company_title = companylist.findAll(class_="header name")
 
     if len(company_title) != 0:
-        # content active 블록에서 필요한 정보 추출
         '''
+        # active content 수집
+        
         content_active = []
         ## 회사명/링크 추출 및 리스트에 추가
         block_active = companylist.find(class_= "content active")
@@ -77,10 +83,10 @@ while True:
         content_total.append(content_active)
         '''
 
-        # content 태그 회사 추출
+        # 광고 아닌 회사 추출
         block = companylist.findAll(class_= "content")
 
-        ## 회사명/링크 추출 및 리스트에 추가
+        ## 광고 아닌 회사명/링크 추출 및 리스트에 추가
         for i in range(len(block)):
             temp, temp2 = [], []
             content = []
@@ -116,13 +122,13 @@ while True:
     else:
         break
 
-if content_count == total_count:
-    print(content_count)
+if (content_count + block_ad_job_count) == total_count:
+    print(content_count + block_ad_job_count)
     print(total_count)
     print("Correct")
     print(time.time()-start)
 else:
-    print(content_count)
+    print(content_count + block_ad_job_count)
     print(total_count)
     print("Incorrect")
     print(time.time()-start)
