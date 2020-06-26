@@ -1,7 +1,4 @@
 '''
-1. 한 페이지 내에서 회사 각각, 직무 각각 수집해서 리스트로 결합
-    → 이렇게 하면 각 직무가 개별로 추출되어 어느 회사의 직무인지 모름
-    → 블록으로 구분된 회사 하나에서 모든 데이터를 추출해 각각 리스트화 시켜야할듯
 '''
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -40,6 +37,7 @@ companylist = page.find(class_= "ui job items segment", id = "company-list")
 company_title = companylist.findAll(class_="header name")
 content_total = []
 n = 0
+content_count = 0
 
 while True:
     n += 1
@@ -83,7 +81,7 @@ while True:
         block = companylist.findAll(class_= "content")
 
         ## 회사명/링크 추출 및 리스트에 추가
-        for i in range(len(company_title)):
+        for i in range(len(block)):
             temp, temp2 = [], []
             content = []
             block_name = block[i].findAll(class_="header name")
@@ -97,6 +95,7 @@ while True:
                 name = re.sub(pattern, '', name)
                 namewithlink = (name + "(" + company_link + ")").strip()
                 content.append(namewithlink)
+                content_count += 1
 
         ## 직무명/링크 추출 & 리스트에 추가
             block_job = block[i].findAll(class_="nowrap job-title primary link")
@@ -110,20 +109,20 @@ while True:
         ## 크롤링 완료된 페이지 확인
         print(n)
 
-        ## 크롤링 내용 .csv파일로 저장장
+        ## 크롤링 내용 .csv파일로 저장
         data = pd.DataFrame(content_total)
         data.to_csv("rocketpunch.csv", encoding = "utf-8-sig")
 
     else:
         break
 
-if len(content_total) == total_count:
-    print(len(content_total))
+if content_count == total_count:
+    print(content_count)
     print(total_count)
     print("Correct")
     print(time.time()-start)
 else:
-    print(len(content_total))
+    print(content_count)
     print(total_count)
     print("Incorrect")
     print(time.time()-start)
