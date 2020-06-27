@@ -4,34 +4,43 @@ import lxml
 import re
 from itertools import groupby
 import itertools
+import pandas as pd
+import time
+start = time.time()
 
 def jobalio():
     page_list = [1]
     all_list= []
+    add_page_list = []
     n = 0
     while True:
         if len(page_list) != 0:
             n += 1
             page_list = []
-            url = "https://job.alio.go.kr/recruit.do?pageNo=" + str(n) + "&param=&search_yn=Y&idx=&recruitYear=&recruitMonth=&s_date=2019.11.23&e_date=2020.06.23&org_name=&ing=2&title=&order=REG_DATE"
+            url = "https://job.alio.go.kr/recruit.do?pageNo=" + str(n)
             req = requests.get(url)
             bs = BeautifulSoup(req.content, "lxml")
-            liststring = bs.select("table.tbl:nth-child(10) > tbody > tr > td")
+            block_job = bs.select("table.tbl:nth-child(10) > tbody > tr > td")
 
-            for i in liststring:
-                a = str(i.text).rstrip()
+            for i in block_job:
+                job_description = str(i.text).rstrip()
                 pattern = re.compile(r'\s+')
-                a = re.sub(pattern, '', a)
-                page_list.append(a)
+                job_description = re.sub(pattern, '', job_description)
+                page_list.append(job_description)
 
             page_list = [list(g) for k,g in groupby(page_list, lambda x:x =='') if not k]
-            all_list.append(page_list)
+            add_page_list += page_list
+            ## 크롤링 완료된 페이지 확인
+            print(n)
+
+            ## 크롤링 내용 .csv파일로 저장
+
+            data = pd.DataFrame(add_page_list)
+            data.to_csv("jobalio.csv", encoding="utf-8-sig")
+
 
         else:
-            all_list.pop(-1)
-            return all_list
+            return add_page_list
 
 test_list = jobalio()
-for i in test_list:
-    for j in i:
-        print(j)
+print(time.time()-start)
