@@ -38,10 +38,10 @@ def jobalio():
                 pattern = re.compile(r'\s+')
                 job_description = re.sub(pattern, '', job_description)
                 page_list.append(job_description)
-                collect_job_count += 1
 
             page_list = [list(g) for k,g in groupby(page_list, lambda x:x =='') if not k]
             add_page_list += page_list
+            collect_job_count += len(page_list)
 
             # 크롤링 완료된 페이지 및 job count 확인
             print(n)
@@ -49,6 +49,7 @@ def jobalio():
 
             # 크롤링 내용 .csv파일로 저장
             data = pd.DataFrame(add_page_list)
+            data.columns = ["번호", "채용제목", "기관명", "근무지", "고용형태", "등록일", "마감일", "상태"]
             data.to_csv("jobalio.csv", encoding="utf-8-sig")
 
         else:
